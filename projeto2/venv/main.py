@@ -47,4 +47,13 @@ def main():
     return
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog="POO Image Processor (Projeto 2)",
+        description="Thresholds images and applies filters on them")
+    parser.add_argument('--imgpath', help='Path of the image')
+    parser.add_argument('--op',)
+    parser.add_argument('--t',)
+    parser.add_argument('--dt',)
+    parser.add_argument('--k',)
     main()
