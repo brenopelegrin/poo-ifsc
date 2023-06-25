@@ -1,0 +1,47 @@
+Abaixo são especificadas as linhas de comando utilizadas para a geração de cada uma das saídas do conjunto de teste.
+
+THRESHOLDING
+
+- gourds_thresholding_t57.pgm
+	python3 main.py --imgpath ./gourds.pgm --op thresholding --t 57 --outputpath ./output/
+
+- chest_thresholding_t100.pgm
+	python3 main.py --imgpath ./chest.pgm --op thresholding --t 100 --outputpath ./output/
+
+- leaf_thresholding_t180.pgm
+	python3 main.py --imgpath ./leaf.pgm --op thresholding --t 180 --outputpath ./output/
+
+MEAN
+
+- gourds_mean_k5.pgm
+	python3 main.py --imgpath ./gourds.pgm --op mean --k 5 --outputpath ./output/
+
+- chest_mean_k3.pgm
+	python3 main.py --imgpath ./chest.pgm --op mean --k 3 --outputpath ./output/
+
+- leaf_mean_k9.pgm
+	python3 main.py --imgpath ./leaf.pgm --op mean --k 9 --outputpath ./output/
+
+MEDIAN
+
+- gourds_median_k13.pgm
+	python3 main.py --imgpath ./gourds.pgm --op median --k 13 --outputpath ./output/
+
+- chest_median_k7.pgm
+	python3 main.py --imgpath ./chest.pgm --op median --k 7 --outputpath ./output/
+
+- leaf_median_k9.pgm
+	python3 main.py --imgpath ./median.pgm --op median --k 9 --outputpath ./output/
+
+SGT
+
+- gourds_sgt_dt1.pgm / gourds_sgt_dt1.txt
+	python3 main.py --imgpath ./gourds.pgm --op sgt --dt 1 --outputpath ./output/
+
+- chest_sgt_dt1.pgm / chest_sgt_dt1.txt
+	python3 main.py --imgpath ./chest.pgm --op sgt --dt 1 --outputpath ./output/
+
+- leaf_sgt_dt1.pgm / leaf_sgt_dt1.txt
+	python3 main.py --imgpath ./leaf.pgm --op sgt --dt 1 --outputpath ./output/
+
+
