@@ -1,0 +1,6 @@
+magic_number P2
+dimensions (620, 348)
+maxval 242
+mean 112
+median 95
+T 125
