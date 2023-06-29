@@ -2,7 +2,7 @@ import argparse
 import sys
 import os
 import copy
-import math
+
 # Disclaimer about the packages usage:
 # The "os" package will be used to join paths and filenames and provide compatibility between UNIX-based systems and DOS-based systems.
 # The "sys" package will be used to provide clean exit for production environment.
@@ -16,12 +16,10 @@ def mean(array):
     return(sum(array)/len(array))
 
 def median(array):
-    lst = sorted(array)  # Sort the list first
-    if len(lst) % 2 == 0:  # Checking if the length is even
-        # Applying formula which is sum of middle two divided by 2
+    lst = sorted(array)
+    if len(lst) % 2 == 0:
         return (lst[len(lst) // 2] + lst[(len(lst) - 1) // 2]) / 2
     else:
-        # If length is odd then get middle value
         return lst[len(lst) // 2]
 
 class Image:
@@ -56,12 +54,17 @@ class Image:
         self._medianIntensity = self.__getMedianIntensityFromPixels(self._imagePixels)
         self._imageHistogram = self.__getHistogramFromPixels(self._imagePixels)
 
+        # sgt method must ran for this attribute to be set.
         self._T = None
 
     def __readFromPGM(self, filePath: str) -> dict:  
         """
             Reads a PGM file and convert its content into usable data.
             Only works for PGM files past July/2000. After that, PGM's could have more than one image in one file.
+            
+            Can read:
+                - All P2 files (ASCII 8-bit)
+                - P5 files with 8-bit pixels (maxval<=255), with pixels encoded in the format 'byte byte byte byte...'
 
             Args:
                 filePath (str): path to the pgm file
@@ -128,7 +131,28 @@ class Image:
         else:
             raise Exception(f"File '{inputPath}' has invalid magic number (neither P5 or P2).")
     
-    def saveToPGM(self, outputPath):
+    def to_P5(self):
+        newImage = Image(
+            fromFile = False,
+            magicNumber = 'P5',
+            imagePixels = copy.deepcopy(self._imagePixels))
+        return newImage
+    
+    def to_P2(self):
+        newImage = Image(
+            fromFile = False,
+            magicNumber = 'P2',
+            imagePixels = copy.deepcopy(self._imagePixels))
+        return newImage
+
+    def saveToPGM(self, outputPath: str):
+        """
+            Writes a PGM file, converting Image pixels to PGM.
+            Can output in both P2 and P5 formats.
+
+            Args:
+                outputPath (str): path to the output pgm file.
+        """
         if(self._magicNumber == 'P2'):
             lines = []
             lines.append(f'{self._magicNumber}\n')
@@ -216,21 +240,17 @@ class Image:
     def getSgtThreshold(self):
         return int(self._T)
 
-    def to_P5(self):
-        newImage = Image(
-            fromFile = False,
-            magicNumber = 'P5',
-            imagePixels = copy.deepcopy(self._imagePixels))
-        return newImage
-    
-    def to_P2(self):
-        newImage = Image(
-            fromFile = False,
-            magicNumber = 'P2',
-            imagePixels = copy.deepcopy(self._imagePixels))
-        return newImage
-
     def thresholding(self, t=127, save=False, outputPath:str = ''):
+        """
+            Applies the thresholding filter onto an Image object, considering a initial threshold t.
+
+            Args:
+                t (int): initial threshold.
+                outputPath (str): Output path for the file.
+
+            Returns:
+                A new Image object with the applied threshold.
+        """
         newPixels = copy.deepcopy(self._imagePixels)
         
         for row in range(len(newPixels)):
@@ -251,9 +271,18 @@ class Image:
         return newImage 
 
     def sgt(self, dt=1, save:bool = False, outputPath:str = ''):
-        newPixels = copy.deepcopy(self._imagePixels)
+        """
+            Applies the thresholding filter using Simple Global Linearization method onto an Image object, considering a dt threshold variation.
 
-        # DEBUG: This gives wrong optimal threshold value. Needs to debug.
+            Args:
+                dt (int): Maximum variation between previous and new threshold value.
+                outputPath (str): Output path for the file.
+
+            Returns:
+                A new Image object with the applied threshold.
+        """
+
+        newPixels = copy.deepcopy(self._imagePixels)
 
         T_old = self._meanIntensity
         T_new = T_old
@@ -287,103 +316,48 @@ class Image:
 
         return newImage
 
-    def mean2(self, k:int = 3, save:bool = False, outputPath: str = ''):
+    def mean(self, k:int = 3, save:bool = False, outputPath:str = ''):
         """
             Applies the mean filter onto an Image object, considering k x k neighbourhoods.
 
             Args:
-                k (int): Size of the neighbourhood (matrix of k x k).
+                k (int): Size of the neighbourhood (matrix of k x k), k odd.
                 outputPath (str): Output path for the file.
 
             Returns:
                 A new Image object with the applied filter.
         """
+
         assert k % 2 != 0, "k must be an odd number"
         assert k >= 3, "k must be greater than or equal 3"
 
         newPixels = copy.deepcopy(self._imagePixels)
-        meanPixels = copy.deepcopy(newPixels)
-        rows = len(newPixels) - 1
-        cols = len(newPixels[0]) - 1
-        # Considering a square matrix k x k centered in the interest element, 
-        # In the diagonals, we will have (k-1)/2 elements before and after the interest element.
-        maxOffset = int(0.5*(k-1))
-
-        # Iterate through each element of newPixels and calculate its new value based on neighbourhood matrix.
-        for i in range(rows+1):
-            for j in range(cols+1):
-                neighbourhoodMatrix = [[0]*k]*k
-                interestElement = newPixels[i][j]
-                
-                # i_prime and j_prime are indexes relative to interestElement, varying from -maxOffset to +maxOffset (the +1 is because of range implementation)
-                for i_prime in range(i-maxOffset, i+maxOffset+1):
-                    for j_prime in range(j-maxOffset, j+maxOffset+1):
-                        # nbhd_i and nbhd_j retrives i and j for neighbourhoodMatrix
-                        nbhd_i = i_prime - i
-                        nbhd_j = j_prime - j
-                        if i_prime != i and j_prime != j:
-                            try:
-                                neighbourPixel = newPixels[i_prime][j_prime]
-                                neighbourhoodMatrix[nbhd_i][nbhd_j] = neighbourPixel
-                            except:
-                                neighbourPixel = 0
-                                neighbourhoodMatrix[nbhd_i][nbhd_j] = neighbourPixel
-                        else:
-                            centralPixel = 0
-                            neighbourhoodMatrix[maxOffset][maxOffset] = centralPixel
-
-                
-                flatNeighbourhoodMatrix = flatten(neighbourhoodMatrix)
-                meanFromNeighbourhood = round(mean(flatNeighbourhoodMatrix))
-                meanPixels[i][j] = meanFromNeighbourhood
-        
-        newImage = Image(
-            fromFile = False,
-            magicNumber = self._magicNumber,
-            imagePixels = meanPixels
-        )
-
-        if(save):
-            newImage.saveToPGM(outputPath)
-
-        return newImage
-        
-    def mean(self, k:int = 3, save:bool = False, outputPath:str = ''):
-        newPixels = copy.deepcopy(self._imagePixels)
         offset = k//2
 
-        for i in range(len(newPixels)):
-            for j in range(len(newPixels[0])):
-                # the current pixel index is i,j
-                # lets search for pixels in range in (i-k//2, i+k//2) and (j-k//2, j+k//2)
+        for row in range(self._height):
+            for col in range(self._width):
+                kernel = []
 
-                kernel = [[0]*k]*k
-                for h in range(i-offset, i+offset +1):
-                    for w in range(j-offset, j+offset +1):
-                        currentPixel = 0
-                        try:
-                            # the central element must not be included
-                            if h != i and w != j:
-                                currentPixel = newPixels[h][w]
-                            else:
-                                currentPixel = 0
-                        except:
-                            currentPixel = 0
-                        m = h-i
-                        n = w-j
-                        kernel[offset+m][offset+n] = currentPixel
-                
-                # Drop the central element
-                kernel[offset].pop(offset)
+                for x in range(-offset,offset+1):
+                    for y in range(-offset,offset+1):
+                        i_probe = row+x
+                        j_probe = col+y
 
-                flatNeighbourhood = flatten(kernel)
-                meanNeighbourhood = mean(flatNeighbourhood)
-                newPixels[i][j] = int(meanNeighbourhood)
+                        height_inside = (i_probe >= 0 and i_probe < self._height)
+                        width_inside = (j_probe >= 0 and j_probe < self._width)
+                        is_inside = height_inside and width_inside
+
+                        if is_inside:
+                            kernel.append(newPixels[i_probe][j_probe])
+                        else:
+                            kernel.append(0)
+                averageKernel = mean(kernel)
+                newPixels[row][col] = int(averageKernel)
 
         newImage = Image(
             fromFile = False,
             magicNumber = self._magicNumber,
-            imagePixels = newPixels
+            imagePixels = newPixels 
         )
 
         if(save):
@@ -408,47 +382,32 @@ class Image:
         assert k >= 3, "k must be greater than or equal 3"
 
         newPixels = copy.deepcopy(self._imagePixels)
-        medianPixels = copy.deepcopy(newPixels)
-        rows = len(newPixels) - 1
-        cols = len(newPixels[0]) - 1
-        # Considering a square matrix k x k centered in the interest element, 
-        # In the diagonals, we will have (k-1)/2 elements before and after the interest element.
-        maxOffset = int((k-1)/2)
+        offset = k//2
 
-        # Iterate through each element of newPixels and calculate its new value based on neighbourhood matrix.
-        for i in range(rows+1):
-            for j in range(cols+1):
-                neighbourhoodMatrix = [[0]*k]*k
-                interestElement = newPixels[i][j]
-                
-                # i_prime and j_prime are indexes relative to interestElement, varying from -maxOffset to +maxOffset (the +1 is because of range implementation)
-                for i_prime in range(i-maxOffset, i+maxOffset+1):
-                    for j_prime in range(j-maxOffset, j+maxOffset+1):
-                        # nbhd_i and nbhd_j retrives i and j for neighbourhoodMatrix
-                        nbhd_i = i_prime - i
-                        nbhd_j = j_prime - j
-                        if i_prime != i and j_prime != j:
-                            try:
-                                neighbourPixel = newPixels[i_prime][j_prime]
-                                neighbourhoodMatrix[nbhd_i][nbhd_j] = neighbourPixel
-                            except:
-                                neighbourPixel = 0
-                                neighbourhoodMatrix[nbhd_i][nbhd_j] = neighbourPixel
+        for row in range(self._height):
+            for col in range(self._width):
+                kernel = []
+
+                for x in range(-offset,offset+1):
+                    for y in range(-offset,offset+1):
+                        i_probe = row+x
+                        j_probe = col+y
+
+                        height_inside = (i_probe >= 0 and i_probe < self._height)
+                        width_inside = (j_probe >= 0 and j_probe < self._width)
+                        is_inside = height_inside and width_inside
+
+                        if is_inside:
+                            kernel.append(newPixels[i_probe][j_probe])
                         else:
-                            centralPixel = 0
-                            neighbourhoodMatrix[maxOffset][maxOffset] = centralPixel
+                            kernel.append(0)
+                medianKernel = median(kernel)
+                newPixels[row][col] = int(medianKernel)
 
-                
-                flatNeighbourhoodMatrix = flatten(neighbourhoodMatrix)
-                
-                medianFromNeighbourhood = median(flatNeighbourhoodMatrix)
-
-                medianPixels[i][j] = medianFromNeighbourhood
-        
         newImage = Image(
             fromFile = False,
             magicNumber = self._magicNumber,
-            imagePixels = medianPixels
+            imagePixels = newPixels 
         )
 
         if(save):
@@ -491,12 +450,6 @@ def mainRoutine(args):
         raise Exception(f"The provided path '{args.imgpath}' is not a file.")
 
     parsedPGM = Image(fromFile=True, filePath=args.imgpath)
-
-    if(args.dt):
-        # This triggers the parsedPGM sgt method to save self._T attribute on parsedPGM object
-        parsedPGM.sgt(dt=args.dt, save=False)   
-    else:
-        parsedPGM.sgt(save=False)
     
     if(args.op == 'thresholding'):
         output = os.path.join(currentDir, 'thresholding.pgm') if not args.outputpath else os.path.join(args.outputpath, 'thresholding.pgm')
@@ -506,6 +459,15 @@ def mainRoutine(args):
         output = os.path.join(currentDir, 'sgt.pgm') if not args.outputpath else os.path.join(args.outputpath, 'sgt.pgm')
         newPGM = parsedPGM.sgt(dt=args.dt, save=True, outputPath=output)
 
+        # As specified by the professor, we'll only print output to console in the sgt case.
+
+        print(f"magic_number {parsedPGM.getMagicNumber()}")
+        print(f"dimensions {parsedPGM.getDimensions()}")    
+        print(f"maxval {parsedPGM.getMaxval()}")
+        print(f"mean {parsedPGM.getMeanIntensity()}")
+        print(f"median {parsedPGM.getMedianIntensity()}")
+        print(f"T {parsedPGM.getSgtThreshold()}")
+
     elif(args.op == 'mean'):
         output = os.path.join(currentDir, 'mean.pgm') if not args.outputpath else os.path.join(args.outputpath, 'mean.pgm')
         newPGM = parsedPGM.mean(k=args.k, save=True, outputPath=output)
@@ -513,13 +475,6 @@ def mainRoutine(args):
     elif(args.op == 'median'):
         output = os.path.join(currentDir, 'median.pgm') if not args.outputpath else os.path.join(args.outputpath, 'median.pgm')
         newPGM = parsedPGM.median(k=args.k, save=True, outputPath=output)
-
-    print(f"magic_number {parsedPGM.getMagicNumber()}")
-    print(f"dimensions {parsedPGM.getDimensions()}")    
-    print(f"maxval {parsedPGM.getMaxval()}")
-    print(f"mean {parsedPGM.getMeanIntensity()}")
-    print(f"median {parsedPGM.getMedianIntensity()}")
-    print(f"T {parsedPGM.getSgtThreshold()}")
 
     return
 
