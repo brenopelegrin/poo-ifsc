@@ -1,3 +1,13 @@
+#################################################
+# Projeto 2 - Programação Orientada a Objetos   #
+# Prof. Gonzalo Travieso                        #
+# IFSC/USP                                      #
+# Aluno: Breno Henrique Pelegrin da Silva       #
+# N. USP: 13687303                              #
+# Data: 29/06/2023                              #
+# Licença: MIT                                  #
+#################################################
+
 import argparse
 import sys
 import os
