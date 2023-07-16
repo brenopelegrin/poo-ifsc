@@ -12,13 +12,11 @@ import argparse
 import sys
 import os
 import copy
-
 # Disclaimer about the packages usage:
 # The "os" package will be used to join paths and filenames and provide compatibility between UNIX-based systems and DOS-based systems.
 # The "sys" package will be used to provide clean exit for production environment.
 # The "argparse" package will be used to parse CLI arguments.
 # The "copy" package will be used to do deepcopy of arrays when applying filters.
-
 def flatten(array):
     return [item for sublist in array for item in sublist]
 
@@ -375,7 +373,6 @@ class Image:
 
         return newImage
                 
-
     def median(self, k:int = 3, save:bool = False, outputPath: str = ''):
         """
             Applies the median filter onto an Image object, considering k x k neighbourhoods.
@@ -425,6 +422,51 @@ class Image:
 
         return newImage
 
+    def sobel(self, save: bool = False, outputPath: str = ''):
+        #partial images
+        Gx_img=copy.deepcopy(self._imagePixels)
+        Gy_img=copy.deepcopy(self._imagePixels)
+        #kernels
+        Gx=[[1,0,-1],[2,0,-2],[1,0,-1]]
+        Gy=[[1,2,1],[0,0,0],[-1,-2,-1]]
+        #resulting img
+        filtered_image=copy.deepcopy(self._imagePixels)
+        #to generate both imgs, Gx_img and Gy_img
+        # the loop is applied two times,
+        # Gx_img -> times=0, Gy_times -> times=1
+        for times in range(2):
+            for line in range(self._height):
+                for column in range(self._width):
+                    cumulative_sum=0
+                    for dx in range(-1,1+1): 
+                        for dy in range(-1,1+1):
+                            if 0<= line + dx <self._height and 0<= column + dy <self._width:
+                                if times==0:
+                                    cumulative_sum+=(self._imagePixels[line+dx][column+dy]*Gx[1+dx][1+dy])
+                                if times==1:
+                                        cumulative_sum+=(self._imagePixels[line+dx][column+dy]*Gy[1+dx][1+dy])
+                                        Gy[1+dx][1+dy]
+                    if times==0: Gx_img[line][column]=cumulative_sum
+                    if times==1: Gy_img[line][column]=cumulative_sum
+        bigger_value=0
+        for line in range(self._height):
+            for column in range(self._width):
+                new_px=(Gx_img[line][column]**2+Gy_img[line][column]**2)**0.5
+                filtered_image[line][column]=new_px
+                #the following line is searching for the bigger pixel inside the img
+                if new_px>bigger_value: bigger_value=new_px
+        #now the img pixels are normalized to 8bit 
+        for line in range(self._height):
+            for column in range(self._width):
+                filtered_image[line][column]=round(255*filtered_image[line][column]/bigger_value)    
+        newImage = Image(
+            fromFile = False,
+            magicNumber = self._magicNumber,
+            imagePixels = filtered_image 
+        )
+        if(save):
+            newImage.saveToPGM(outputPath)
+        return newImage
 def handleCLI():
     parser = argparse.ArgumentParser(
         prog="POO Image Processor (Project 2)",
@@ -441,7 +483,7 @@ def handleCLI():
         required=False)
 
     parser.add_argument('--op', 
-        choices=['thresholding', 'sgt', 'mean', 'median'],
+        choices=['thresholding', 'sgt', 'mean', 'median','sobel'],
         help="Operation to be done on the image",
         required=True)
 
@@ -485,6 +527,10 @@ def mainRoutine(args):
     elif(args.op == 'median'):
         output = os.path.join(currentDir, 'median.pgm') if not args.outputpath else os.path.join(args.outputpath, 'median.pgm')
         newPGM = parsedPGM.median(k=args.k, save=True, outputPath=output)
+
+    elif (args.op == 'sobel'):
+        output = os.path.join(currentDir, 'sobel.pgm') if not args.outputpath else os.path.join(args.outputpath, 'sobel.pgm')
+        newPGM = parsedPGM.sobel(save=True, outputPath=output)
 
     return
 
