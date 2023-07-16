@@ -477,73 +477,6 @@ class Image:
 
         return newImage
 
-def handleCLI():
-    parser = argparse.ArgumentParser(
-        prog="POO Image Processor (Project 2)",
-        description="Thresholds images and applies filters on them")
-
-    parser.add_argument('--imgpath', 
-        help="Path of the image",
-        type=str,
-        required=True)
-
-    parser.add_argument('--outputpath', 
-        help="Path to store the result. If not provided, the program will store the result in the current working directory.",
-        type=str,
-        required=False)
-
-    parser.add_argument('--op', 
-        choices=['thresholding', 'sgt', 'mean', 'median','sobel'],
-        help="Operation to be done on the image",
-        required=True)
-
-    parser.add_argument('--t', type=int, required=False) # thresholding
-    parser.add_argument('--dt', type=float, required=False) # sgt
-    parser.add_argument('--k', type=int, required=False) # mean/median
-    
-    args = parser.parse_args()
-
-    return args
-
-def mainRoutine(args):
-    currentDir = os.getcwd()
-
-    if(not os.path.isfile(args.imgpath)):
-        raise Exception(f"The provided path '{args.imgpath}' is not a file.")
-
-    parsedPGM = Image(fromFile=True, filePath=args.imgpath)
-    
-    if(args.op == 'thresholding'):
-        output = os.path.join(currentDir, 'thresholding.pgm') if not args.outputpath else os.path.join(args.outputpath, 'thresholding.pgm')
-        newPGM = parsedPGM.thresholding(t=args.t, save=True, outputPath=output)
-
-    elif(args.op == 'sgt'):
-        output = os.path.join(currentDir, 'sgt.pgm') if not args.outputpath else os.path.join(args.outputpath, 'sgt.pgm')
-        newPGM = parsedPGM.sgt(dt=args.dt, save=True, outputPath=output)
-
-        # As specified by the professor, we'll only print output to console in the sgt case.
-
-        print(f"magic_number {parsedPGM.getMagicNumber()}")
-        print(f"dimensions {parsedPGM.getDimensions()}")    
-        print(f"maxval {parsedPGM.getMaxval()}")
-        print(f"mean {parsedPGM.getMeanIntensity()}")
-        print(f"median {parsedPGM.getMedianIntensity()}")
-        print(f"T {parsedPGM.getSgtThreshold()}")
-
-    elif(args.op == 'mean'):
-        output = os.path.join(currentDir, 'mean.pgm') if not args.outputpath else os.path.join(args.outputpath, 'mean.pgm')
-        newPGM = parsedPGM.mean(k=args.k, save=True, outputPath=output)
-
-    elif(args.op == 'median'):
-        output = os.path.join(currentDir, 'median.pgm') if not args.outputpath else os.path.join(args.outputpath, 'median.pgm')
-        newPGM = parsedPGM.median(k=args.k, save=True, outputPath=output)
-
-    elif (args.op == 'sobel'):
-        output = os.path.join(currentDir, 'sobel.pgm') if not args.outputpath else os.path.join(args.outputpath, 'sobel.pgm')
-        newPGM = parsedPGM.sobel(save=True, outputPath=output)
-
-    return
-
 def meanParamVerify(params):
     for dic in params:
         if(dic['param'] == '--k'):
@@ -696,7 +629,7 @@ To show this help message, use -h/--h/-help/--help.
     }
 
     processed_Chain = []
-    print(op_chain)
+    print('DEBUG: the op_chain is ', op_chain)
     for i in range(len(op_chain)):
         if(op_chain[i] in chainSpecs.keys()):
             currentOp = chainSpecs[op_chain[i]]
@@ -715,12 +648,11 @@ To show this help message, use -h/--h/-help/--help.
 
     return processed_Chain, imgpath, outputpath
 
-def mainRoutine2():
+def mainRoutine():
     chain, imgpath, outputdir = customParser()
-    print(chain)
+    print('DEBUG: the processed chain is ', chain)
 
     outputpath=''
-    
 
     if(outputdir):
         outputpath = os.path.join(outputdir, 'output.pgm')
@@ -731,7 +663,7 @@ def mainRoutine2():
 
     for spec in chain:
         if(spec['op'] == 'mean'):
-            print('running mean')
+            print('DEBUG: running mean')
             parameters = {
                 'k': None
             }
@@ -741,12 +673,13 @@ def mainRoutine2():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
-                print(f"mean has k= {parameters['k']}")
+                print(f"DEBUG: mean has k={parameters['k']}")
                 startPGM = startPGM.mean(k=int(parameters['k']), save=False)
             else:
                  startPGM = startPGM.mean(save=False)
 
         elif(spec['op'] == 'median'):
+            print('DEBUG: running median')
             parameters = {
                 'k': None
             }
@@ -756,6 +689,7 @@ def mainRoutine2():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
+                print(f"DEBUG: median has k={parameters['k']}")
                 startPGM = startPGM.median(k=int(parameters['k']), save=False)
             else:
                  startPGM = startPGM.median(save=False)
@@ -790,7 +724,7 @@ def mainRoutine2():
                 startPGM = startPGM.sgt(save=False)
         
         elif(spec['op'] == 'sobel'):
-            print('running sobel')
+            print('DEBUG: running sobel')
             startPGM = startPGM.sobel(save=False)
 
     head, tail = os.path.split(imgpath)
@@ -805,9 +739,8 @@ def mainRoutine2():
 
 if __name__ == '__main__':
     # This does a graceful shutdown without showing tracebacks, only error messages.
-    #args = handleCLI()
     try:
-        mainRoutine2()
+        mainRoutine()
     except BaseException as error:
         print(f"Error: {str(error)}")
     finally:
