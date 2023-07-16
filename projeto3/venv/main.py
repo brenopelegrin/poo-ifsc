@@ -629,7 +629,7 @@ To show this help message, use -h/--h/-help/--help.
     }
 
     processed_Chain = []
-    print('DEBUG: the op_chain is ', op_chain)
+    #print('DEBUG: the op_chain is ', op_chain)
     for i in range(len(op_chain)):
         if(op_chain[i] in chainSpecs.keys()):
             currentOp = chainSpecs[op_chain[i]]
@@ -650,7 +650,7 @@ To show this help message, use -h/--h/-help/--help.
 
 def mainRoutine():
     chain, imgpath, outputdir = customParser()
-    print('DEBUG: the processed chain is ', chain)
+    #print('DEBUG: the processed chain is ', chain)
 
     outputpath=''
 
@@ -663,7 +663,7 @@ def mainRoutine():
 
     for spec in chain:
         if(spec['op'] == 'mean'):
-            print('DEBUG: running mean')
+            #print('DEBUG: running mean')
             parameters = {
                 'k': None
             }
@@ -673,13 +673,13 @@ def mainRoutine():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
-                print(f"DEBUG: mean has k={parameters['k']}")
+                #print(f"DEBUG: mean has k={parameters['k']}")
                 startPGM = startPGM.mean(k=int(parameters['k']), save=False)
             else:
                  startPGM = startPGM.mean(save=False)
 
         elif(spec['op'] == 'median'):
-            print('DEBUG: running median')
+            #print('DEBUG: running median')
             parameters = {
                 'k': None
             }
@@ -689,7 +689,7 @@ def mainRoutine():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
-                print(f"DEBUG: median has k={parameters['k']}")
+                #print(f"DEBUG: median has k={parameters['k']}")
                 startPGM = startPGM.median(k=int(parameters['k']), save=False)
             else:
                  startPGM = startPGM.median(save=False)
@@ -724,7 +724,7 @@ def mainRoutine():
                 startPGM = startPGM.sgt(save=False)
         
         elif(spec['op'] == 'sobel'):
-            print('DEBUG: running sobel')
+            #print('DEBUG: running sobel')
             startPGM = startPGM.sobel(save=False)
 
     head, tail = os.path.split(imgpath)
