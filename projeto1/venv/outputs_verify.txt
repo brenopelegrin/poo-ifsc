@@ -1,0 +1,5 @@
+test_chicken_01.out OK
+test_chicken_02.out OK
+test_chicken_03.out OK
+
+test_mule_01.out OK

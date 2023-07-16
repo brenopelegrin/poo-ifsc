@@ -5,7 +5,7 @@
 # Aluno: Breno Henrique Pelegrin da Silva       #
 # N. USP: 13687303                              #
 # Data: 29/06/2023                              #
-# Licença: MIT                                  #
+# Licença: GNU GPL v3                           #
 #################################################
 
 import argparse
@@ -17,15 +17,42 @@ import copy
 # The "os" package will be used to join paths and filenames and provide compatibility between UNIX-based systems and DOS-based systems.
 # The "sys" package will be used to provide clean exit for production environment.
 # The "argparse" package will be used to parse CLI arguments.
-# The "copy" package will be used to do deepcopy of arrays when applying filters.
+# The "copy" package will be used to do deepcopy of the original pixel arrays when applying filters.
 
-def flatten(array):
+def flatten(array: list):
+    """Auxiliary function that flattens a 2D array of the form [[a,b,c,...], [a,b,c,...],...] into [a,b,c,...]
+
+    Args:
+        array (list): 2D array
+
+    Returns:
+        result: flattened array
+    """
+    
     return [item for sublist in array for item in sublist]
 
-def mean(array):
+def mean(array: list):
+    """Auxiliary function that calculates the mean value of an 1D array
+
+    Args:
+        array (list): list of values 
+
+    Returns:
+        result: mean value for the list
+    """
+
     return(sum(array)/len(array))
 
-def median(array):
+def median(array: list):
+    """Auxiliary function that calculates the median value of an 1D array (list)
+
+    Args:
+        array (list): list of values 
+
+    Returns:
+        result: median value for the list
+    """
+
     lst = sorted(array)
     if len(lst) % 2 == 0:
         return (lst[len(lst) // 2] + lst[(len(lst) - 1) // 2]) / 2
@@ -34,6 +61,10 @@ def median(array):
 
 class Image:
     def __init__(self, fromFile: bool = False, filePath: str = '', magicNumber: str = '', imagePixels: list = []):
+
+        # This tries to make the syntax easier for instantiating the object:
+        # When you want to read from PGM file, use Image(fromFile=True, filePath='your_path')
+        # When you already have the pixels matrix, use Image(fromFile=False, magicNumber='your_magicnumber', imagePixels=[your_matrix])
 
         if(fromFile):
             assert filePath != '', "To create an Image from file, pass the filePath argument."
@@ -64,7 +95,7 @@ class Image:
         self._medianIntensity = self.__getMedianIntensityFromPixels(self._imagePixels)
         self._imageHistogram = self.__getHistogramFromPixels(self._imagePixels)
 
-        # sgt method must ran for this attribute to be set.
+        # sgt method must be ran for this attribute to be set.
         self._T = None
 
     def __readFromPGM(self, filePath: str) -> dict:  
@@ -79,6 +110,7 @@ class Image:
             Args:
                 filePath (str): path to the pgm file
         """
+
         data = {
             'type': None,
             'width': None,
@@ -124,6 +156,8 @@ class Image:
 
             return data
 
+        # Although we didn't need to implement P5 file reading, I've done this for fun.
+
         elif(magic == 'P5'):
             # P5 files encode pixels in plain bytes.
             # This code only reads P5 files with maxval <= 255 which encodes 1 byte per pixel, providing support for P2 <-> P5 conversion.
@@ -163,6 +197,7 @@ class Image:
             Args:
                 outputPath (str): path to the output pgm file.
         """
+
         if(self._magicNumber == 'P2'):
             lines = []
             lines.append(f'{self._magicNumber}\n')
@@ -176,6 +211,8 @@ class Image:
             with open(outputPath, 'w') as outputFile:
                 for line in lines:
                     outputFile.write(line)
+
+        # Although we didn't need to implement P5 file writing, I've done this for fun.
 
         elif(self._magicNumber == 'P5'):
             lines = []
@@ -218,6 +255,7 @@ class Image:
             Args:
                 pixels (list): array of pixels in the image
         """
+
         histogram = [0] * 256
         flatPixels = flatten(pixels)
 
@@ -250,9 +288,9 @@ class Image:
     def getSgtThreshold(self):
         return int(self._T)
 
-    def thresholding(self, t=127, save=False, outputPath:str = ''):
+    def thresholding(self, t=127, save:bool = False, outputPath:str = ''):
         """
-            Applies the thresholding filter onto an Image object, considering a initial threshold t.
+            Applies the thresholding filter onto an Image object, considering an initial threshold t.
 
             Args:
                 t (int): initial threshold.
@@ -261,6 +299,7 @@ class Image:
             Returns:
                 A new Image object with the applied threshold.
         """
+
         newPixels = copy.deepcopy(self._imagePixels)
         
         for row in range(len(newPixels)):
@@ -331,7 +370,7 @@ class Image:
             Applies the mean filter onto an Image object, considering k x k neighbourhoods.
 
             Args:
-                k (int): Size of the neighbourhood (matrix of k x k), k odd.
+                k (int): Size of the neighbourhood (matrix of k x k), k must be odd.
                 outputPath (str): Output path for the file.
 
             Returns:
@@ -358,7 +397,7 @@ class Image:
                         is_inside = height_inside and width_inside
 
                         if is_inside:
-                            kernel.append(newPixels[i_probe][j_probe])
+                            kernel.append(self._imagePixels[i_probe][j_probe])
                         else:
                             kernel.append(0)
                 averageKernel = mean(kernel)
@@ -376,12 +415,12 @@ class Image:
         return newImage
                 
 
-    def median(self, k:int = 3, save:bool = False, outputPath: str = ''):
+    def median(self, k:int = 3, save:bool = False, outputPath:str = ''):
         """
             Applies the median filter onto an Image object, considering k x k neighbourhoods.
 
             Args:
-                k (int): Size of the neighbourhood (matrix of k x k).
+                k (int): Size of the neighbourhood (matrix of k x k), k must be odd.
                 outputPath (str): Output path for the file.
 
             Returns:
@@ -408,7 +447,7 @@ class Image:
                         is_inside = height_inside and width_inside
 
                         if is_inside:
-                            kernel.append(newPixels[i_probe][j_probe])
+                            kernel.append(self._imagePixels[i_probe][j_probe])
                         else:
                             kernel.append(0)
                 medianKernel = median(kernel)
@@ -427,8 +466,8 @@ class Image:
 
 def handleCLI():
     parser = argparse.ArgumentParser(
-        prog="POO Image Processor (Project 2)",
-        description="Thresholds images and applies filters on them")
+        prog="POO PGM Image Processor (Project 2)",
+        description="Read/write PGM files and apply thresholding, sgt, median and mean filters on the image.")
 
     parser.add_argument('--imgpath', 
         help="Path of the image",
@@ -445,9 +484,9 @@ def handleCLI():
         help="Operation to be done on the image",
         required=True)
 
-    parser.add_argument('--t', type=int, required=False) # thresholding
-    parser.add_argument('--dt', type=float, required=False) # sgt
-    parser.add_argument('--k', type=int, required=False) # mean/median
+    parser.add_argument('--t', type=int, required=False, help="Initial threshold for the thresholding operation, t must be an integer.") # thresholding
+    parser.add_argument('--dt', type=float, required=False, help="Maximum variation between two thresholds for the sgt operation, dt must be an integer.") # sgt
+    parser.add_argument('--k', type=int, required=False, help="Size of the neighbourhood for the mean and median filter, k must be an odd integer.") # mean/median
     
     args = parser.parse_args()
 
