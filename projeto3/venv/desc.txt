@@ -1,0 +1,15 @@
+Descrição de como os arquivos do diretório output foram gerados:
+
+* chicken-sobel.pgm:
+
+    Gerado aplicando apenas o operador de Sobel no arquivo chicken.pgm
+    
+* mule-sobel-sgt-1.pgm:
+
+    Aplicar Sobel sobre mule.pgm e aplicar SGT com dt=1 no resultado da operação anterior.
+    
+* owl-mean-9-sobel.pgm:
+
+    Aplicar filtro de média com k=9 e aplicar Sobel na resultado anterior.
+    
+
