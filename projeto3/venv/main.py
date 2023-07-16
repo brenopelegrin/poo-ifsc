@@ -9,23 +9,50 @@
 # Licença: MIT                                  #
 #################################################
 
-import argparse
 import sys
 import os
 import copy
+from math import hypot
 # Disclaimer about the packages usage:
 # The "os" package will be used to join paths and filenames and provide compatibility between UNIX-based systems and DOS-based systems.
 # The "sys" package will be used to provide clean exit for production environment.
-# The "argparse" package will be used to parse CLI arguments.
 # The "copy" package will be used to do deepcopy of arrays when applying filters.
+# The "math.hypot" function will be used to calculate hypotenuse.
 
-def flatten(array):
+def flatten(array: list):
+    """Auxiliary function that flattens a 2D array of the form [[a,b,c,...], [a,b,c,...],...] into [a,b,c,...]
+
+    Args:
+        array (list): 2D array
+
+    Returns:
+        result: flattened array
+    """
+    
     return [item for sublist in array for item in sublist]
 
-def mean(array):
+def mean(array: list):
+    """Auxiliary function that calculates the mean value of an 1D array
+
+    Args:
+        array (list): list of values 
+
+    Returns:
+        result: mean value for the list
+    """
+
     return(sum(array)/len(array))
 
-def median(array):
+def median(array: list):
+    """Auxiliary function that calculates the median value of an 1D array (list)
+
+    Args:
+        array (list): list of values 
+
+    Returns:
+        result: median value for the list
+    """
+
     lst = sorted(array)
     if len(lst) % 2 == 0:
         return (lst[len(lst) // 2] + lst[(len(lst) - 1) // 2]) / 2
@@ -34,6 +61,10 @@ def median(array):
 
 class Image:
     def __init__(self, fromFile: bool = False, filePath: str = '', magicNumber: str = '', imagePixels: list = []):
+
+        # This tries to make the syntax easier for instantiating the object:
+        # When you want to read from PGM file, use Image(fromFile=True, filePath='your_path')
+        # When you already have the pixels matrix, use Image(fromFile=False, magicNumber='your_magicnumber', imagePixels=[your_matrix])
 
         if(fromFile):
             assert filePath != '', "To create an Image from file, pass the filePath argument."
@@ -64,7 +95,7 @@ class Image:
         self._medianIntensity = self.__getMedianIntensityFromPixels(self._imagePixels)
         self._imageHistogram = self.__getHistogramFromPixels(self._imagePixels)
 
-        # sgt method must ran for this attribute to be set.
+        # sgt method must be ran for this attribute to be set.
         self._T = None
 
     def __readFromPGM(self, filePath: str) -> dict:  
@@ -79,6 +110,7 @@ class Image:
             Args:
                 filePath (str): path to the pgm file
         """
+
         data = {
             'type': None,
             'width': None,
@@ -124,6 +156,8 @@ class Image:
 
             return data
 
+        # Although we didn't need to implement P5 file reading, I've done this for fun.
+
         elif(magic == 'P5'):
             # P5 files encode pixels in plain bytes.
             # This code only reads P5 files with maxval <= 255 which encodes 1 byte per pixel, providing support for P2 <-> P5 conversion.
@@ -163,6 +197,7 @@ class Image:
             Args:
                 outputPath (str): path to the output pgm file.
         """
+
         if(self._magicNumber == 'P2'):
             lines = []
             lines.append(f'{self._magicNumber}\n')
@@ -176,6 +211,8 @@ class Image:
             with open(outputPath, 'w') as outputFile:
                 for line in lines:
                     outputFile.write(line)
+
+        # Although we didn't need to implement P5 file writing, I've done this for fun.
 
         elif(self._magicNumber == 'P5'):
             lines = []
@@ -218,6 +255,7 @@ class Image:
             Args:
                 pixels (list): array of pixels in the image
         """
+
         histogram = [0] * 256
         flatPixels = flatten(pixels)
 
@@ -250,9 +288,9 @@ class Image:
     def getSgtThreshold(self):
         return int(self._T)
 
-    def thresholding(self, t=127, save=False, outputPath:str = ''):
+    def thresholding(self, t=127, save:bool = False, outputPath:str = ''):
         """
-            Applies the thresholding filter onto an Image object, considering a initial threshold t.
+            Applies the thresholding filter onto an Image object, considering an initial threshold t.
 
             Args:
                 t (int): initial threshold.
@@ -261,6 +299,7 @@ class Image:
             Returns:
                 A new Image object with the applied threshold.
         """
+
         newPixels = copy.deepcopy(self._imagePixels)
         
         for row in range(len(newPixels)):
@@ -331,7 +370,7 @@ class Image:
             Applies the mean filter onto an Image object, considering k x k neighbourhoods.
 
             Args:
-                k (int): Size of the neighbourhood (matrix of k x k), k odd.
+                k (int): Size of the neighbourhood (matrix of k x k), k must be odd.
                 outputPath (str): Output path for the file.
 
             Returns:
@@ -358,7 +397,7 @@ class Image:
                         is_inside = height_inside and width_inside
 
                         if is_inside:
-                            kernel.append(newPixels[i_probe][j_probe])
+                            kernel.append(self._imagePixels[i_probe][j_probe])
                         else:
                             kernel.append(0)
                 averageKernel = mean(kernel)
@@ -375,12 +414,13 @@ class Image:
 
         return newImage
                 
-    def median(self, k:int = 3, save:bool = False, outputPath: str = ''):
+
+    def median(self, k:int = 3, save:bool = False, outputPath:str = ''):
         """
             Applies the median filter onto an Image object, considering k x k neighbourhoods.
 
             Args:
-                k (int): Size of the neighbourhood (matrix of k x k).
+                k (int): Size of the neighbourhood (matrix of k x k), k must be odd.
                 outputPath (str): Output path for the file.
 
             Returns:
@@ -407,7 +447,7 @@ class Image:
                         is_inside = height_inside and width_inside
 
                         if is_inside:
-                            kernel.append(newPixels[i_probe][j_probe])
+                            kernel.append(self._imagePixels[i_probe][j_probe])
                         else:
                             kernel.append(0)
                 medianKernel = median(kernel)
@@ -457,7 +497,7 @@ class Image:
         bigger_value=0
         for line in range(self._height):
             for column in range(self._width):
-                new_px=(Gx_img[line][column]**2+Gy_img[line][column]**2)**0.5
+                new_px= hypot(Gx_img[line][column], Gy_img[line][column])
                 filtered_image[line][column]=new_px
                 #the following line is searching for the bigger pixel inside the img
                 if new_px>bigger_value: bigger_value=new_px
@@ -514,7 +554,12 @@ def sobelParamVerify(params):
         raise Exception("sobel operation can't take arguments.")
 
 def customParser():
-    args = sys.argv[1:]
+    """
+        This function implements custom CLI parsing.
+        Unfortunately, argparse isn't sufficient to fullfill the project specifications.
+        Hence, this function was created to parse the CLI arguments in the way that it was specified.
+    """
+    args = sys.argv[1:] #Removes the filename
 
     help_cmds = ['-h', '--h', '--help', '-help', '--help']
     help_msg="""POO Image Processor (Project 3)
@@ -559,11 +604,13 @@ To show this help message, use -h/--h/-help/--help.
 """
 
     if(len(args) == 0):
+        # If no arguments were passed, show help
         print(help_msg)
         sys.exit()
 
     for i in help_cmds:
         if i in args:
+            # If user specified any of the help commands, show help instead of doing something.
             print(help_msg)
             sys.exit()
 
@@ -579,6 +626,7 @@ To show this help message, use -h/--h/-help/--help.
     outputpath='./'
 
     for i in range(len(args)):
+        # Find index where the commands occur.
         if(args[i] == '--imgpath'):
             imgpath_index = i
         if(args[i] == '--op'):
@@ -603,8 +651,10 @@ To show this help message, use -h/--h/-help/--help.
         del_indices.append(outputpath_index)
         del_indices.append(outputpath_index+1)
 
+    # Delete all chain elements that aren't related to --op.
     op_chain = [i for j, i in enumerate(args) if j not in del_indices]
 
+    # Create specifications for each operation, with its arguments and verifiers.
     chainSpecs = {
         'mean': {
             'params': ['--k'],
@@ -629,14 +679,15 @@ To show this help message, use -h/--h/-help/--help.
     }
 
     processed_Chain = []
-    #print('DEBUG: the op_chain is ', op_chain)
     for i in range(len(op_chain)):
         if(op_chain[i] in chainSpecs.keys()):
             currentOp = chainSpecs[op_chain[i]]
             currentParams = []
 
             if(op_chain[i] != 'sobel'):
+                # We need to ignore operation sobel, because it doesn't have arguments.
                 if(len(op_chain) > i+1):
+                    # Get value from argument in the next chain element.
                     if(op_chain[i+1] in currentOp['params']):
                         currentParams.append({'param': op_chain[i+1], 'value': op_chain[i+2]})
                         currentOp['verify'](currentParams) # Throws error if parameters are invalid
@@ -650,7 +701,6 @@ To show this help message, use -h/--h/-help/--help.
 
 def mainRoutine():
     chain, imgpath, outputdir = customParser()
-    #print('DEBUG: the processed chain is ', chain)
 
     outputpath=''
 
@@ -662,8 +712,9 @@ def mainRoutine():
     startPGM = Image(fromFile=True, filePath=imgpath)
 
     for spec in chain:
+        # Iterate through each element of the --op chain, doing the operations in the provided order.
+
         if(spec['op'] == 'mean'):
-            #print('DEBUG: running mean')
             parameters = {
                 'k': None
             }
@@ -673,13 +724,11 @@ def mainRoutine():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
-                #print(f"DEBUG: mean has k={parameters['k']}")
                 startPGM = startPGM.mean(k=int(parameters['k']), save=False)
             else:
-                 startPGM = startPGM.mean(save=False)
+                startPGM = startPGM.mean(save=False)
 
         elif(spec['op'] == 'median'):
-            #print('DEBUG: running median')
             parameters = {
                 'k': None
             }
@@ -689,10 +738,9 @@ def mainRoutine():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
-                #print(f"DEBUG: median has k={parameters['k']}")
                 startPGM = startPGM.median(k=int(parameters['k']), save=False)
             else:
-                 startPGM = startPGM.median(save=False)
+                startPGM = startPGM.median(save=False)
 
         elif(spec['op'] == 'thresholding'):
             parameters = {
@@ -706,7 +754,7 @@ def mainRoutine():
             if(parameters['t']):
                 startPGM = startPGM.thresholding(t=int(parameters['t']), save=False)
             else:
-                 startPGM = startPGM.thresholding(save=False)
+                startPGM = startPGM.thresholding(save=False)
 
         
         elif(spec['op'] == 'sgt'):
@@ -724,9 +772,9 @@ def mainRoutine():
                 startPGM = startPGM.sgt(save=False)
         
         elif(spec['op'] == 'sobel'):
-            #print('DEBUG: running sobel')
             startPGM = startPGM.sobel(save=False)
 
+    # Prints the necessary output
     head, tail = os.path.split(imgpath)
     print(f"image_name : {tail}")
     for specs in chain:
