@@ -3,16 +3,17 @@
 # Prof. Gonzalo Travieso                        #
 # IFSC/USP                                      #
 # Alunos:                                       #
-#   - Breno Henrique Pelegrin da Silva          #
-#   - Vinicius Sousa Dutra                      #
-# Data: 29/06/2023                              #
-# Licença: MIT                                  #
+# - Breno Henrique Pelegrin da Silva (13687303) #
+# - Vinicius Sousa Dutra (13686257)             #
+# Data: 16/07/2023                              #
+# Licença: GNU GPL v3                           #
 #################################################
 
 import sys
 import os
 import copy
 from math import hypot
+
 # Disclaimer about the packages usage:
 # The "os" package will be used to join paths and filenames and provide compatibility between UNIX-based systems and DOS-based systems.
 # The "sys" package will be used to provide clean exit for production environment.
@@ -566,11 +567,11 @@ def customParser():
 To show this help message, use -h/--h/-help/--help.
 
 * Required arguments:
-    --imgpath: Path of the source image
+    --imgpath: Path of the source image file
     --op: operation or chain of operations and its parameters to be applied to the Image.
 
 * Optional arguments:
-    --outputpath: Directory to store the result. If not provided, the program will store the result in the current working directory.
+    --outputpath: Directory to store the result. If not provided, the program will store the result in the current working directory. The filename will be output.pgm.
 
 * Chain of operations:
     In the --op argument, you can pass a chain of operations to be done on the image, followed by its parameters.
@@ -585,24 +586,25 @@ To show this help message, use -h/--h/-help/--help.
 
     mean
         parameters:
-            --k: 
-
+            --k: k x k neighbourhood, must be integer and odd
     median
         parameters:
-            --k: 
-
+            --k: k x k neighbourhood, must be integer and odd
     thresholding
         parameters:
-            --t: 
-
+            --t: initial threshold value, integer
     sgt
         parameters:
-            --dt: 
-
+            --dt: minimum difference between two thresholds, float
     sobel
         parameters: none
-"""
 
+* Examples of usage:
+    >> python main.py --imgpath input/chicken.pgm sobel --outputpath output/
+    Applies the sobel filter into input/chicken.pgm image, storing its result in output/output.pgm
+
+    >> python main.py --imgpath input/chicken.pgm sobel sgt --dt 1 mean --k 9 --outputpath output/
+    Applies the sobel filter into input/chicken.pgm image, then the sgt filter with dt=1, then the mean filter with k=9 and stores the result in output/output.pgm"""
     if(len(args) == 0):
         # If no arguments were passed, show help
         print(help_msg)
@@ -709,7 +711,7 @@ def mainRoutine():
     else:
         outputpath = os.path.join(os.getcwd(), 'output.pgm')
 
-    startPGM = Image(fromFile=True, filePath=imgpath)
+    currentPGM = Image(fromFile=True, filePath=imgpath)
 
     for spec in chain:
         # Iterate through each element of the --op chain, doing the operations in the provided order.
@@ -724,9 +726,9 @@ def mainRoutine():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
-                startPGM = startPGM.mean(k=int(parameters['k']), save=False)
+                currentPGM = currentPGM.mean(k=int(parameters['k']), save=False)
             else:
-                startPGM = startPGM.mean(save=False)
+                currentPGM = currentPGM.mean(save=False)
 
         elif(spec['op'] == 'median'):
             parameters = {
@@ -738,9 +740,9 @@ def mainRoutine():
                         parameters['k'] = dic['value'] 
             
             if(parameters['k']):
-                startPGM = startPGM.median(k=int(parameters['k']), save=False)
+                currentPGM = currentPGM.median(k=int(parameters['k']), save=False)
             else:
-                startPGM = startPGM.median(save=False)
+                currentPGM = currentPGM.median(save=False)
 
         elif(spec['op'] == 'thresholding'):
             parameters = {
@@ -752,9 +754,9 @@ def mainRoutine():
                         parameters['t'] = dic['value'] 
             
             if(parameters['t']):
-                startPGM = startPGM.thresholding(t=int(parameters['t']), save=False)
+                currentPGM = currentPGM.thresholding(t=int(parameters['t']), save=False)
             else:
-                startPGM = startPGM.thresholding(save=False)
+                currentPGM = currentPGM.thresholding(save=False)
 
         
         elif(spec['op'] == 'sgt'):
@@ -767,12 +769,12 @@ def mainRoutine():
                         parameters['dt'] = dic['value'] 
             
             if(parameters['dt']):
-                startPGM = startPGM.sgt(dt=float(parameters['dt']), save=False)
+                currentPGM = currentPGM.sgt(dt=float(parameters['dt']), save=False)
             else:
-                startPGM = startPGM.sgt(save=False)
+                currentPGM = currentPGM.sgt(save=False)
         
         elif(spec['op'] == 'sobel'):
-            startPGM = startPGM.sobel(save=False)
+            currentPGM = currentPGM.sobel(save=False)
 
     # Prints the necessary output
     head, tail = os.path.split(imgpath)
@@ -781,15 +783,15 @@ def mainRoutine():
         print(f"op : {specs['op']}")
         if specs['params'] != []:
             for dic in specs['params']:
-                print(f"\t{ dic['param'].replace('--', '')} : {dic['value']}")
+                print(f"    {dic['param'].replace('--', '')} : {dic['value']}")
     
-    startPGM.saveToPGM(outputpath)
+    currentPGM.saveToPGM(outputpath)
 
 if __name__ == '__main__':
     # This does a graceful shutdown without showing tracebacks, only error messages.
     try:
         mainRoutine()
-    except BaseException as error:
+    except Exception as error:
         print(f"Error: {str(error)}")
     finally:
         sys.exit()
